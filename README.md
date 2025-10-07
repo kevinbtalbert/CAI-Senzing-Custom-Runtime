@@ -233,14 +233,16 @@ Now load each dataset into Senzing:
 cd ~/senzing-demo
 
 # Load customers (subject records)
-sz_file_loader -f customers.jsonl
+sz_file_loader -t 1 -f customers.jsonl
 
 # Load reference data (enrichment)
-sz_file_loader -f reference.jsonl
+sz_file_loader -t 1 -f reference.jsonl
 
 # Load watchlist (risk entities)
-sz_file_loader -f watchlist.jsonl
+sz_file_loader -t 1 -f watchlist.jsonl
 ```
+
+> **⚠️ Important**: The `-t 1` flag uses a single thread, which is **required for SQLite**. Without it, you'll see lock contention errors like "Took X seconds since last lock refresh". For production with PostgreSQL or MySQL, you can use more threads (e.g., `-t 20`).
 
 **Expected output** (per file):
 ```
@@ -446,6 +448,83 @@ entities = json.loads(results)
 ```python
 why_result = sz_engine.why_records("CUSTOMERS", "1001", "CUSTOMERS", "1002")
 explanation = json.loads(why_result)
+```
+
+---
+
+## Troubleshooting
+
+### SQLite Lock Contention Errors
+
+**Problem**: When loading data with `sz_file_loader`, you see errors like:
+```
+ERR: Took X seconds since last lock refresh. RES() OBS([...])
+```
+
+**Cause**: SQLite doesn't handle high concurrency well. The default 20 threads overwhelm the file-based database.
+
+**Solution**: Use the `-t 1` flag to load with a single thread:
+```bash
+sz_file_loader -t 1 -f customers.jsonl
+sz_file_loader -t 1 -f reference.jsonl
+sz_file_loader -t 1 -f watchlist.jsonl
+```
+
+This will be slower but avoids lock contention. For production with PostgreSQL or MySQL, you can use `-t 20` or higher.
+
+### "Unknown command" or "Data source does not exist" in sz_explorer
+
+**Problem**: Commands don't work or you get errors about missing data sources.
+
+**Cause**: You may have copied prompt symbols (`>`, `(szcfg)`, `(szeda)`) or didn't configure data sources.
+
+**Solution**:
+1. Only type the commands, not the prompts shown in examples
+2. Ensure you ran `sz_configtool` to add data sources before loading data
+3. Check data sources exist: In `sz_configtool`, type `listDataSources`
+
+### "No module named 'senzing'" or Import Errors
+
+**Problem**: Python can't find the Senzing modules.
+
+**Cause**: The Senzing environment isn't sourced.
+
+**Solution**:
+```bash
+cd ~/senzing && source setupEnv
+# Now run your Python script
+python ~/senzing_example.py
+```
+
+### "engine object has been destroyed"
+
+**Problem**: Python script fails with "engine object has been destroyed and can no longer be used".
+
+**Cause**: The `sz_factory` object went out of scope and was garbage collected.
+
+**Solution**: Keep the factory alive as long as you use the engine:
+```python
+# Good: factory stays in scope
+sz_factory = SzAbstractFactoryCore("app", config)
+sz_engine = sz_factory.create_engine()
+# Use engine...
+
+# Bad: factory goes out of scope
+def get_engine():
+    factory = SzAbstractFactoryCore("app", config)
+    return factory.create_engine()  # Factory destroyed when function returns!
+```
+
+### Data Loss Between Sessions
+
+**Problem**: Your data disappears after restarting your Cloudera ML session.
+
+**Cause**: Project created in ephemeral location like `/var/` or `/opt/`.
+
+**Solution**: Always create projects in your home directory:
+```bash
+/opt/senzing/er/bin/sz_create_project ~/senzing  # Persistent
+# NOT: /var/senzing/project  # Ephemeral!
 ```
 
 ---
