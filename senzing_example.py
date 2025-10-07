@@ -6,44 +6,83 @@ Senzing SDK Python Example
 This script demonstrates how to use the Senzing Python SDK for entity resolution.
 
 Prerequisites:
-- Senzing environment is set up (source /var/senzing/project/setupEnv)
-- Data sources are configured (CUSTOMERS, REFERENCE, WATCHLIST)
-- Sample data is loaded
+1. Create a persistent Senzing project (to keep data between sessions):
+   /opt/senzing/er/bin/sz_create_project ~/senzing
+   cd ~/senzing && source setupEnv && ./bin/sz_setup_config
+
+2. Configure data sources (run sz_configtool and add CUSTOMERS, REFERENCE, WATCHLIST)
+
+3. Load sample data:
+   cd ~/senzing-demo
+   sz_file_loader -f customers.jsonl
+   sz_file_loader -f reference.jsonl
+   sz_file_loader -f watchlist.jsonl
+
+See README.md "Getting Started with Sample Data" section for detailed instructions.
 
 Usage:
-    python senzing_example.py
+    cd ~/senzing
+    source setupEnv
+    python ~/senzing_example.py
+    
+Note: Set SENZING_PROJECT_DIR env var to use a different project location
 """
 
 import json
 import sys
-from senzing import (
-    SzConfig,
-    SzConfigManager,
-    SzDiagnostic,
-    SzEngine,
-    SzEngineFlags,
-    SzError,
-)
+import os
+
+# Import Senzing SDK
+try:
+    from senzing import SzError
+    from senzing_core import SzAbstractFactoryCore
+except ImportError as e:
+    print(f"Error importing Senzing SDK: {e}")
+    print("\nMake sure:")
+    print("1. You have sourced setupEnv: source /var/senzing/project/setupEnv")
+    print("2. PYTHONPATH includes Senzing SDK: echo $PYTHONPATH")
+    sys.exit(1)
 
 
 def initialize_senzing():
     """
-    Initialize the Senzing SDK components.
+    Initialize the Senzing SDK using the factory pattern.
     
     Returns:
-        tuple: (sz_engine, sz_config, sz_diagnostic) objects
+        tuple: (sz_factory, sz_engine) - Both must be kept alive
     """
     print("Initializing Senzing SDK...")
     
+    # Get project directory from environment or use default
+    # Default to ~/senzing for persistent storage across sessions
+    default_project = os.path.expanduser('~/senzing')
+    project_dir = os.environ.get('SENZING_PROJECT_DIR', default_project)
+    
+    # Configuration JSON for Senzing engine
+    senzing_engine_configuration_json = json.dumps({
+        "PIPELINE": {
+            "CONFIGPATH": f"{project_dir}/etc",
+            "SUPPORTPATH": f"{project_dir}/data",
+            "RESOURCEPATH": f"{project_dir}/resources"
+        },
+        "SQL": {
+            "CONNECTION": f"sqlite3://na:na@{project_dir}/var/sqlite/G2C.db"
+        }
+    })
+    
     try:
-        # Create engine, config, and diagnostic instances
-        # In Senzing v4, these are created directly without a factory
-        sz_engine = SzEngine()
-        sz_config = SzConfig()
-        sz_diagnostic = SzDiagnostic()
+        # Create Senzing factory with configuration
+        # IMPORTANT: Must keep factory alive as long as engine is in use
+        sz_factory = SzAbstractFactoryCore("SenzingExample", senzing_engine_configuration_json)
         
-        print("✓ Senzing SDK initialized successfully\n")
-        return sz_engine, sz_config, sz_diagnostic
+        # Create engine instance
+        sz_engine = sz_factory.create_engine()
+        
+        print(f"✓ Senzing SDK initialized successfully")
+        print(f"  Project directory: {project_dir}\n")
+        
+        # Return both factory and engine - factory must stay alive!
+        return sz_factory, sz_engine
         
     except SzError as err:
         print(f"✗ Error initializing Senzing: {err}")
@@ -85,25 +124,16 @@ def add_new_record(sz_engine):
         # Convert to JSON string
         record_json = json.dumps(new_record)
         
-        # Add the record with INFO flag to get resolution details
-        flags = SzEngineFlags.SZ_WITH_INFO
-        result = sz_engine.add_record(
-            data_source_code=new_record["DATA_SOURCE"],
-            record_id=new_record["RECORD_ID"],
-            record_definition=record_json,
-            flags=flags
+        # Add the record (simple API without flags)
+        sz_engine.add_record(
+            new_record["DATA_SOURCE"],
+            new_record["RECORD_ID"],
+            record_json
         )
         
         print(f"✓ Record added successfully!")
         print(f"  Data Source: {new_record['DATA_SOURCE']}")
         print(f"  Record ID: {new_record['RECORD_ID']}")
-        
-        # Parse and display the resolution info
-        if result:
-            info = json.loads(result)
-            if "AFFECTED_ENTITIES" in info:
-                print(f"  Affected Entities: {len(info['AFFECTED_ENTITIES'])}")
-        
         print()
         
     except SzError as err:
@@ -124,18 +154,8 @@ def get_entity_by_record(sz_engine, data_source, record_id):
     print("=" * 60)
     
     try:
-        # Get entity with all features and related entities
-        flags = (
-            SzEngineFlags.SZ_ENTITY_INCLUDE_ALL_FEATURES |
-            SzEngineFlags.SZ_ENTITY_INCLUDE_RECORD_DATA |
-            SzEngineFlags.SZ_ENTITY_INCLUDE_RELATED_ENTITIES
-        )
-        
-        result = sz_engine.get_entity_by_record_id(
-            data_source_code=data_source,
-            record_id=record_id,
-            flags=flags
-        )
+        # Get entity by record ID (simple API)
+        result = sz_engine.get_entity_by_record_id(data_source, record_id)
         
         entity = json.loads(result)
         resolved_entity = entity.get("RESOLVED_ENTITY", {})
@@ -185,12 +205,9 @@ def search_by_attributes(sz_engine):
     
     try:
         search_json = json.dumps(search_attributes)
-        flags = SzEngineFlags.SZ_SEARCH_INCLUDE_RESOLVED | SzEngineFlags.SZ_SEARCH_INCLUDE_STATS
         
-        result = sz_engine.search_by_attributes(
-            attributes=search_json,
-            flags=flags
-        )
+        # Search by attributes (simple API)
+        result = sz_engine.search_by_attributes(search_json)
         
         search_result = json.loads(result)
         entities = search_result.get("RESOLVED_ENTITIES", [])
@@ -233,17 +250,8 @@ def find_path_between_entities(sz_engine, entity_id_1, entity_id_2):
     print("=" * 60)
     
     try:
-        flags = (
-            SzEngineFlags.SZ_FIND_PATH_INCLUDE_MATCHING_INFO |
-            SzEngineFlags.SZ_ENTITY_INCLUDE_ENTITY_NAME
-        )
-        
-        result = sz_engine.find_path_by_entity_id(
-            start_entity_id=entity_id_1,
-            end_entity_id=entity_id_2,
-            max_degrees=3,  # Maximum 3 degrees of separation
-            flags=flags
-        )
+        # Find path between entities (simple API)
+        result = sz_engine.find_path_by_entity_id(entity_id_1, entity_id_2, 3)
         
         path_result = json.loads(result)
         entities = path_result.get("ENTITIES", [])
@@ -279,18 +287,8 @@ def why_entity_analysis(sz_engine, data_source_1, record_id_1, data_source_2, re
     print("=" * 60)
     
     try:
-        flags = (
-            SzEngineFlags.SZ_WHY_ENTITIES_DEFAULT_FLAGS |
-            SzEngineFlags.SZ_ENTITY_INCLUDE_FEATURE_STATS
-        )
-        
-        result = sz_engine.why_records(
-            data_source_code_1=data_source_1,
-            record_id_1=record_id_1,
-            data_source_code_2=data_source_2,
-            record_id_2=record_id_2,
-            flags=flags
-        )
+        # Explain why records did/didn't resolve (simple API)
+        result = sz_engine.why_records(data_source_1, record_id_1, data_source_2, record_id_2)
         
         why_result = json.loads(result)
         
@@ -320,34 +318,22 @@ def why_entity_analysis(sz_engine, data_source_1, record_id_1, data_source_2, re
         print(f"✗ Error in why analysis: {err}\n")
 
 
-def get_statistics(sz_diagnostic):
+def get_engine_statistics(sz_engine):
     """
-    Example: Get Senzing statistics and diagnostics.
+    Example: Get basic Senzing statistics.
     
     Args:
-        sz_diagnostic: Initialized SzDiagnostic instance
+        sz_engine: Initialized SzEngine instance
     """
     print("=" * 60)
-    print("EXAMPLE 6: System Statistics")
+    print("EXAMPLE 6: Engine Statistics")
     print("=" * 60)
     
     try:
-        # Get datastore statistics
-        result = sz_diagnostic.get_datastore_info()
-        stats = json.loads(result)
-        
-        print("✓ Database Statistics:")
-        
-        # Show data sources
-        data_sources = stats.get("DATA_SOURCES", [])
-        print(f"\n  Data Sources: {len(data_sources)}")
-        for ds in data_sources:
-            print(f"    - {ds.get('DSRC_CODE')}: {ds.get('DSRC_RECORD_COUNT', 0):,} records")
-        
-        # Show entity resolution stats
-        if "ENTITY_COUNT" in stats:
-            print(f"\n  Total Entities Resolved: {stats.get('ENTITY_COUNT', 0):,}")
-        
+        # Get engine statistics
+        result = sz_engine.get_stats()
+        print("✓ Engine Statistics:")
+        print(result)
         print()
         
     except SzError as err:
@@ -360,8 +346,8 @@ def main():
     print("SENZING SDK PYTHON EXAMPLES")
     print("=" * 60 + "\n")
     
-    # Initialize Senzing
-    sz_engine, sz_config, sz_diagnostic = initialize_senzing()
+    # Initialize Senzing - keep factory alive!
+    sz_factory, sz_engine = initialize_senzing()
     
     try:
         # Example 1: Add a new record
@@ -382,8 +368,8 @@ def main():
         # Example 5: Why analysis - explain entity resolution
         why_entity_analysis(sz_engine, "CUSTOMERS", "1001", "CUSTOMERS", "1002")
         
-        # Example 6: Get system statistics
-        get_statistics(sz_diagnostic)
+        # Example 6: Get engine statistics
+        get_engine_statistics(sz_engine)
         
         print("=" * 60)
         print("All examples completed successfully!")
@@ -396,7 +382,7 @@ def main():
         import traceback
         traceback.print_exc()
     finally:
-        # Clean up (engines are automatically destroyed)
+        # Clean up (factory and engine are automatically destroyed when they go out of scope)
         print("Cleaning up...\n")
 
 
