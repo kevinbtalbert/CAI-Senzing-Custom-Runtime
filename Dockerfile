@@ -54,14 +54,15 @@ RUN { \
 
 # Install Python dependencies
 # - gnureadline: Provides readline support for sz_explorer and other interactive tools
+# - prettytable: Required for sz_explorer table formatting
 # - mcp: Model Context Protocol for future use
-RUN pip install gnureadline mcp>=0.9.0
+RUN pip install gnureadline prettytable mcp>=0.9.0
 
 # Override Runtime label and environment variables metadata
 ENV ML_RUNTIME_EDITION="JupyterLab with Senzing SDK" \
     ML_RUNTIME_EDITOR="JupyterLab" \
     ML_RUNTIME_SHORT_VERSION="1" \
-    ML_RUNTIME_MAINTENANCE_VERSION="2" \
+    ML_RUNTIME_MAINTENANCE_VERSION="3" \
     ML_RUNTIME_DESCRIPTION="JupyterLab Runtime with Senzing SDK"
 
 ENV ML_RUNTIME_FULL_VERSION="${ML_RUNTIME_SHORT_VERSION}.${ML_RUNTIME_MAINTENANCE_VERSION}"

@@ -9,11 +9,18 @@ This Docker image extends the Cloudera ML Runtime with JupyterLab and Python 3.1
 ## Building the Docker Image
 
 ```bash
-docker build -t senzing-ml-runtime:1.2 .
+docker build -t senzing-ml-runtime:1.3 .
 ```
 
-## Use the built Docker Image
+## Use the Pre-Built Docker Image
 
+If you don't want to build from source, use the pre-built image from Docker Hub:
+
+```bash
+docker pull docker.io/kevintalbert/caisenzingcustomruntime:latest
+```
+
+Use in Cloudera ML:
 ```
 docker.io/kevintalbert/caisenzingcustomruntime:latest
 ```
@@ -24,7 +31,7 @@ docker.io/kevintalbert/caisenzingcustomruntime:latest
 - **Pre-configured Project**: A Senzing project initialized at `/var/senzing/project` with proper permissions
 - **Database Configuration**: SQLite database pre-configured and ready for immediate use
 - **Environment Setup**: Senzing environment variables automatically configured for both interactive and non-interactive sessions
-- **Python Support**: Includes `gnureadline` for interactive tools like `sz_explorer`
+- **Python Support**: Includes `gnureadline` and `prettytable` for interactive tools like `sz_explorer`
 - **MCP Integration**: Model Context Protocol support for AI agent integration
 
 ## Using Senzing in the Runtime
@@ -281,4 +288,11 @@ The following Senzing-related environment variables are automatically configured
 ├── setupEnv          # Environment setup script
 └── var/              # Database and runtime data (writable)
 ```
+
+## Notes
+
+- **Evaluation Limits**: The runtime includes 500 free source records for evaluation
+- **Database**: SQLite is used for evaluation; production systems should use PostgreSQL, MySQL, or other enterprise RDBMS
+- **Support**: Senzing Support is 100% FREE - contact them for assistance or additional evaluation records
+- **Runtime Version**: Currently v1.3 with all dependencies for interactive tools pre-installed
 
