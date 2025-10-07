@@ -64,7 +64,7 @@ python senzing_example.py
 ```
 
 **What the example covers:**
-- ✅ Initializing the Senzing SDK (SzEngine, SzConfig, SzDiagnostic)
+- ✅ Initializing the Senzing v4 SDK (SzEngine, SzConfig, SzDiagnostic)
 - ✅ Adding new records to the entity repository
 - ✅ Retrieving entities by record ID with full details
 - ✅ Searching for entities by attributes (name, DOB, etc.)
@@ -74,12 +74,10 @@ python senzing_example.py
 
 **Quick Python snippet:**
 ```python
-from senzing import SzAbstractFactory, SzAbstractFactoryParameters
+from senzing import SzEngine, SzEngineFlags
 
-# Initialize Senzing
-factory_params = SzAbstractFactoryParameters()
-factory = SzAbstractFactory(**factory_params)
-sz_engine = factory.create_sz_engine()
+# Initialize Senzing (after sourcing setupEnv)
+sz_engine = SzEngine()
 
 # Get an entity
 result = sz_engine.get_entity_by_record_id(
@@ -87,6 +85,11 @@ result = sz_engine.get_entity_by_record_id(
     record_id="1070",
     flags=SzEngineFlags.SZ_ENTITY_DEFAULT_FLAGS
 )
+
+# Parse the JSON result
+import json
+entity = json.loads(result)
+print(f"Entity ID: {entity['RESOLVED_ENTITY']['ENTITY_ID']}")
 ```
 
 ## Getting Started with Sample Data

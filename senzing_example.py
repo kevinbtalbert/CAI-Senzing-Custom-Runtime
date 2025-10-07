@@ -17,8 +17,6 @@ Usage:
 import json
 import sys
 from senzing import (
-    SzAbstractFactory,
-    SzAbstractFactoryParameters,
     SzConfig,
     SzConfigManager,
     SzDiagnostic,
@@ -38,20 +36,21 @@ def initialize_senzing():
     print("Initializing Senzing SDK...")
     
     try:
-        # Create the Senzing abstract factory
-        factory_parameters = SzAbstractFactoryParameters()
-        sz_abstract_factory = SzAbstractFactory(**factory_parameters)
-        
         # Create engine, config, and diagnostic instances
-        sz_engine = sz_abstract_factory.create_sz_engine()
-        sz_config = sz_abstract_factory.create_sz_config()
-        sz_diagnostic = sz_abstract_factory.create_sz_diagnostic()
+        # In Senzing v4, these are created directly without a factory
+        sz_engine = SzEngine()
+        sz_config = SzConfig()
+        sz_diagnostic = SzDiagnostic()
         
         print("✓ Senzing SDK initialized successfully\n")
         return sz_engine, sz_config, sz_diagnostic
         
     except SzError as err:
         print(f"✗ Error initializing Senzing: {err}")
+        sys.exit(1)
+    except Exception as err:
+        print(f"✗ Error initializing Senzing: {err}")
+        print("  Make sure you have sourced setupEnv: source /var/senzing/project/setupEnv")
         sys.exit(1)
 
 
