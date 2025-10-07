@@ -1,4 +1,4 @@
-# CAI-Senzing-Custom-Runtime
+# CAI Senzing Custom Runtime
 
 A custom Cloudera ML Runtime with the Senzing SDK for entity resolution and data analysis.
 
