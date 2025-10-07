@@ -173,7 +173,7 @@ sz_explorer
 
 #### Example Queries in sz_explorer
 
-> ⚠️ **Important**: Do NOT copy the `(szeda)` prompt - it's shown for context only. Just type the commands!
+> Do NOT copy the `(szeda)` prompt - it's shown for context only. Just type the commands!
 
 **Try these commands ONE AT A TIME:**
 
@@ -267,45 +267,3 @@ The following Senzing-related environment variables are automatically configured
 ├── setupEnv          # Environment setup script
 └── var/              # Database and runtime data (writable)
 ```
-
-## Troubleshooting
-
-### "Data source code [CUSTOMERS] does not exist"
-
-**Problem**: When running `sz_explorer` commands, you see: `ERROR: Data source code [CUSTOMERS] does not exist`
-
-**Cause**: The data sources weren't properly added in Step 2, or the configuration wasn't saved.
-
-**Solution**:
-1. Exit `sz_explorer` (type `quit`)
-2. Go back to Step 2 and run `sz_configtool`
-3. Type **only** the commands (without the `>` or `(szcfg)` prompts):
-   - `addDataSource CUSTOMERS`
-   - `addDataSource REFERENCE`
-   - `addDataSource WATCHLIST`
-   - `save` (then type `y` when prompted)
-   - `quit`
-4. Then load the data again (Step 3) before trying `sz_explorer`
-
-### "No module named 'prettytable'" or "No module named 'readline'"
-
-**Problem**: Interactive tools fail with missing Python modules.
-
-**Solution**: If using the pre-built image v1.3 or later, this is already fixed. If using an older version:
-```bash
-pip install --user gnureadline prettytable
-```
-
-### Commands showing "Unknown command" in sz_configtool
-
-**Problem**: You copied the `>` prompt symbol or pasted multiple lines at once.
-
-**Solution**: Type each command individually, pressing Enter after each one. Don't copy prompts like `>`, `(szcfg)`, or `(szeda)`.
-
-## Notes
-
-- **Evaluation Limits**: The runtime includes 500 free source records for evaluation
-- **Database**: SQLite is used for evaluation; production systems should use PostgreSQL, MySQL, or other enterprise RDBMS
-- **Support**: Senzing Support is 100% FREE - contact them for assistance or additional evaluation records
-- **Runtime Version**: Currently v1.3 with all dependencies for interactive tools pre-installed
-
