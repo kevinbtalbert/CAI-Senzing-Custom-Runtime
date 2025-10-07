@@ -117,41 +117,32 @@ wget https://raw.githubusercontent.com/Senzing/truth-sets/main/truthsets/demo/wa
 
 ### Step 2: Configure Data Sources
 
-Before loading data, you need to register each data source in Senzing's configuration:
+Before loading data, you need to register each data source in Senzing's configuration.
+
+**Run these commands in your terminal:**
 
 ```bash
-# Navigate to the Senzing project
 cd /var/senzing/project
-
-# Source the environment
 source setupEnv
-
-# Launch the configuration tool
 sz_configtool
 ```
 
-In the `sz_configtool` interactive prompt, add each data source:
+**Inside the `sz_configtool` interactive prompt, type these commands ONE AT A TIME:**
 
-```
-Type help or ? for help
+> ⚠️ **Important**: Do NOT copy the `>` symbol - it represents the prompt. Only type the commands after it!
 
-> addDataSource CUSTOMERS
-Data source successfully added!
+| Command to Type | What it Does |
+|----------------|--------------|
+| `addDataSource CUSTOMERS` | Adds CUSTOMERS as a data source |
+| `addDataSource REFERENCE` | Adds REFERENCE as a data source |
+| `addDataSource WATCHLIST` | Adds WATCHLIST as a data source |
+| `save` | Saves the configuration (type `y` when prompted) |
+| `quit` | Exits the configuration tool |
 
-> addDataSource REFERENCE
-Data source successfully added!
-
-> addDataSource WATCHLIST
-Data source successfully added!
-
-> save
-WARNING: This will immediately update the current configuration in the Senzing repository with the current configuration!
-
-Are you certain you wish to proceed and save changes? (y/n) y
-Configuration changes saved
-
-> quit
-```
+**Expected output:**
+- After each `addDataSource` command: `Data source successfully added!`
+- After `save`: You'll be prompted to confirm with `y`
+- After `quit`: You'll return to your terminal prompt
 
 ### Step 3: Load the Data Files
 
@@ -180,37 +171,25 @@ Launch the Senzing Explorer to see how entities were resolved:
 sz_explorer
 ```
 
-#### Example Queries
+#### Example Queries in sz_explorer
 
-Try these commands in `sz_explorer`:
+> ⚠️ **Important**: Do NOT copy the `(szeda)` prompt - it's shown for context only. Just type the commands!
 
-**Get a specific entity:**
-```
-(szeda) get CUSTOMERS 1070
-```
+**Try these commands ONE AT A TIME:**
 
-This will show you entity details including:
-- All records that resolved to this entity
-- Features (name, DOB, address, identifiers)
-- Data from multiple sources
+| Command | What it Does |
+|---------|-------------|
+| `get CUSTOMERS 1070` | Shows all details for customer record 1070 |
+| `search {"NAME_FULL": "Robert Smith", "DATE_OF_BIRTH": "1978-12-11"}` | Search for entities by attributes |
+| `why CUSTOMERS 1001 CUSTOMERS 1002` | Explains why two records were/weren't matched |
+| `help` | Lists all available commands |
+| `quit` | Exits sz_explorer |
+
+**What you'll see:**
+- Entity details with all resolved records
+- Name variations and features (DOB, address, IDs)
+- Data merged from multiple sources
 - Relationships to other entities
-
-**Search by attributes:**
-```
-(szeda) search {"NAME_FULL": "Robert Smith", "DATE_OF_BIRTH": "1978-12-11"}
-```
-
-**Find possible relationships:**
-```
-(szeda) why CUSTOMERS 1001 CUSTOMERS 1002
-```
-
-Shows why two records were (or weren't) resolved together.
-
-**Exit the explorer:**
-```
-(szeda) quit
-```
 
 ### Example Output
 
@@ -288,6 +267,40 @@ The following Senzing-related environment variables are automatically configured
 ├── setupEnv          # Environment setup script
 └── var/              # Database and runtime data (writable)
 ```
+
+## Troubleshooting
+
+### "Data source code [CUSTOMERS] does not exist"
+
+**Problem**: When running `sz_explorer` commands, you see: `ERROR: Data source code [CUSTOMERS] does not exist`
+
+**Cause**: The data sources weren't properly added in Step 2, or the configuration wasn't saved.
+
+**Solution**:
+1. Exit `sz_explorer` (type `quit`)
+2. Go back to Step 2 and run `sz_configtool`
+3. Type **only** the commands (without the `>` or `(szcfg)` prompts):
+   - `addDataSource CUSTOMERS`
+   - `addDataSource REFERENCE`
+   - `addDataSource WATCHLIST`
+   - `save` (then type `y` when prompted)
+   - `quit`
+4. Then load the data again (Step 3) before trying `sz_explorer`
+
+### "No module named 'prettytable'" or "No module named 'readline'"
+
+**Problem**: Interactive tools fail with missing Python modules.
+
+**Solution**: If using the pre-built image v1.3 or later, this is already fixed. If using an older version:
+```bash
+pip install --user gnureadline prettytable
+```
+
+### Commands showing "Unknown command" in sz_configtool
+
+**Problem**: You copied the `>` prompt symbol or pasted multiple lines at once.
+
+**Solution**: Type each command individually, pressing Enter after each one. Don't copy prompts like `>`, `(szcfg)`, or `(szeda)`.
 
 ## Notes
 
