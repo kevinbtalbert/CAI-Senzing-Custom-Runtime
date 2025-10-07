@@ -53,13 +53,40 @@ sz_configtool
 
 ### Python SDK
 
-```python
-# Example: Using Senzing in Python
-from senzing import SzEngine, SzConfig
+A comprehensive example file [`senzing_example.py`](senzing_example.py) demonstrates all major SDK features:
 
-# The environment is already configured, start using the SDK
-engine = SzEngine()
-# ... your entity resolution code ...
+**Run the example:**
+```bash
+cd /var/senzing/project
+source setupEnv
+cd /path/to/repo
+python senzing_example.py
+```
+
+**What the example covers:**
+- ✅ Initializing the Senzing SDK (SzEngine, SzConfig, SzDiagnostic)
+- ✅ Adding new records to the entity repository
+- ✅ Retrieving entities by record ID with full details
+- ✅ Searching for entities by attributes (name, DOB, etc.)
+- ✅ Finding relationship paths between entities
+- ✅ "Why" analysis - explaining entity resolution decisions
+- ✅ Getting system statistics and diagnostics
+
+**Quick Python snippet:**
+```python
+from senzing import SzAbstractFactory, SzAbstractFactoryParameters
+
+# Initialize Senzing
+factory_params = SzAbstractFactoryParameters()
+factory = SzAbstractFactory(**factory_params)
+sz_engine = factory.create_sz_engine()
+
+# Get an entity
+result = sz_engine.get_entity_by_record_id(
+    data_source_code="CUSTOMERS",
+    record_id="1070",
+    flags=SzEngineFlags.SZ_ENTITY_DEFAULT_FLAGS
+)
 ```
 
 ## Getting Started with Sample Data
