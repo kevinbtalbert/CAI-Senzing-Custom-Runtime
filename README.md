@@ -49,6 +49,196 @@ engine = SzEngine()
 # ... your entity resolution code ...
 ```
 
+## Getting Started with Sample Data
+
+This section walks you through loading and exploring the Senzing demo truth set data. This is the best way to learn how Senzing performs entity resolution.
+
+### Understanding the Truth Set Files
+
+The demo truth set includes three types of data files, each serving a distinct purpose:
+
+#### 1. **Customers Dataset**
+Represents your subjects of interest - in this case, customer records. These could easily be:
+- Employees for insider threat detection
+- Vendors for supply chain management  
+- Patients for healthcare analytics
+- Any other entities you need to track and resolve
+
+This forms the core dataset you aim to analyze and resolve.
+
+#### 2. **Watchlist Dataset**
+Contains entities you want to flag or avoid due to potential risks:
+- Past fraudsters
+- Known terrorists or money launderers
+- Entities on mandated exclusion lists (e.g., OFAC sanctions)
+
+By integrating watchlist data, Senzing helps you:
+- Identify high-risk entities by matching them against your records
+- Enable risk assessment and compliance monitoring
+- Mitigate threats like fraud, regulatory non-compliance, or reputational damage
+
+#### 3. **Reference Dataset**
+Supplemental data purchased or acquired about individuals or companies:
+- **Individuals**: Demographics, past addresses, contact methods
+- **Companies**: Firmographics, corporate structure, executives, ownership
+
+This enrichment data provides:
+- Additional context for better entity resolution
+- Historical tracking (e.g., address changes over time)
+- Relationship mapping (e.g., corporate hierarchies, beneficial ownership)
+
+### Step 1: Download the Sample Files
+
+Open a terminal in your Cloudera ML session and navigate to your workspace:
+
+```bash
+cd ~/
+mkdir -p senzing-demo
+cd senzing-demo
+
+# Download the three demo datasets
+wget https://raw.githubusercontent.com/Senzing/truth-sets/main/truthsets/demo/customers.jsonl
+wget https://raw.githubusercontent.com/Senzing/truth-sets/main/truthsets/demo/reference.jsonl
+wget https://raw.githubusercontent.com/Senzing/truth-sets/main/truthsets/demo/watchlist.jsonl
+```
+
+### Step 2: Configure Data Sources
+
+Before loading data, you need to register each data source in Senzing's configuration:
+
+```bash
+# Navigate to the Senzing project
+cd /var/senzing/project
+
+# Source the environment
+source setupEnv
+
+# Launch the configuration tool
+sz_configtool
+```
+
+In the `sz_configtool` interactive prompt, add each data source:
+
+```
+Type help or ? for help
+
+> addDataSource CUSTOMERS
+Data source successfully added!
+
+> addDataSource REFERENCE
+Data source successfully added!
+
+> addDataSource WATCHLIST
+Data source successfully added!
+
+> save
+WARNING: This will immediately update the current configuration in the Senzing repository with the current configuration!
+
+Are you certain you wish to proceed and save changes? (y/n) y
+Configuration changes saved
+
+> quit
+```
+
+### Step 3: Load the Data Files
+
+Now load each dataset into Senzing:
+
+```bash
+cd ~/senzing-demo
+
+# Load customers (subject records)
+sz_file_loader -f customers.jsonl
+
+# Load reference data (enrichment)
+sz_file_loader -f reference.jsonl
+
+# Load watchlist (risk entities)
+sz_file_loader -f watchlist.jsonl
+```
+
+As files load, you'll see progress indicators and statistics about records processed.
+
+### Step 4: Explore Entity Resolution Results
+
+Launch the Senzing Explorer to see how entities were resolved:
+
+```bash
+sz_explorer
+```
+
+#### Example Queries
+
+Try these commands in `sz_explorer`:
+
+**Get a specific entity:**
+```
+(szeda) get CUSTOMERS 1070
+```
+
+This will show you entity details including:
+- All records that resolved to this entity
+- Features (name, DOB, address, identifiers)
+- Data from multiple sources
+- Relationships to other entities
+
+**Search by attributes:**
+```
+(szeda) search {"NAME_FULL": "Robert Smith", "DATE_OF_BIRTH": "1978-12-11"}
+```
+
+**Find possible relationships:**
+```
+(szeda) why CUSTOMERS 1001 CUSTOMERS 1002
+```
+
+Shows why two records were (or weren't) resolved together.
+
+**Exit the explorer:**
+```
+(szeda) quit
+```
+
+### Example Output
+
+When you query an entity (e.g., `get CUSTOMERS 1070`), you'll see output like:
+
+```
+Entity summary for entity 98: Jie Wang
+┼───────────┼────────────────────────────────────────┼─────────────────┼
+│ Sources   │ Features                               │ Additional Data │
+┼───────────┼────────────────────────────────────────┼─────────────────┼
+│ CUSTOMERS │ NAME: Jie Wang (PRIMARY)               │ AMOUNT: 100     │
+│ 1069      │ NAME: 王杰 (NATIVE)                    │ AMOUNT: 200     │
+│ 1070      │ DOB: 9/14/93                           │ DATE: 1/26/18   │
+│           │ GENDER: Male                           │ DATE: 1/27/18   │
+│           │ ADDRESS: 12 Constitution Street (HOME) │ STATUS: Active  │
+│           │ NATIONAL_ID: 832721 Hong Kong          │                 │
+┼───────────┼────────────────────────────────────────┼─────────────────┼
+│ REFERENCE │ NAME: Wang Jie (PRIMARY)               │ CATEGORY: Owner │
+│ 2013      │ DOB: 1993-09-14                        │ STATUS: Current │
+│           │ RECORD_TYPE: PERSON                    │                 │
+│           │ REL_POINTER: 2011 (OWNS 60%)           │                 │
+┼───────────┼────────────────────────────────────────┼─────────────────┼
+```
+
+This shows:
+- **Multiple records** (1069, 1070 from CUSTOMERS and 2013 from REFERENCE) resolved to one entity
+- **Name variations** (Jie Wang, Wang Jie, 王杰)
+- **Enrichment data** from reference source showing business ownership
+- **Disclosed relationships** to other entities
+
+### What Just Happened?
+
+Senzing automatically:
+1. ✅ **Matched records** across different data sources based on features (name, DOB, address, etc.)
+2. ✅ **Resolved entities** by determining which records represent the same real-world person or organization
+3. ✅ **Enriched data** by combining information from all sources
+4. ✅ **Identified relationships** between entities (e.g., ownership, addresses)
+5. ✅ **Flagged risks** by matching against watchlist data
+
+All of this happened **automatically** without writing any custom matching rules!
+
 ## Documentation
 
 - [Senzing Quickstart Guide](https://senzing.com/docs/quickstart/quickstart_api/)
