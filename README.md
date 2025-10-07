@@ -233,16 +233,16 @@ Now load each dataset into Senzing:
 cd ~/senzing-demo
 
 # Load customers (subject records)
-sz_file_loader -t 1 -f customers.jsonl
+sz_file_loader -nt 1 -f customers.jsonl
 
 # Load reference data (enrichment)
-sz_file_loader -t 1 -f reference.jsonl
+sz_file_loader -nt 1 -f reference.jsonl
 
 # Load watchlist (risk entities)
-sz_file_loader -t 1 -f watchlist.jsonl
+sz_file_loader -nt 1 -f watchlist.jsonl
 ```
 
-> **⚠️ Important**: The `-t 1` flag uses a single thread, which is **required for SQLite**. Without it, you'll see lock contention errors like "Took X seconds since last lock refresh". For production with PostgreSQL or MySQL, you can use more threads (e.g., `-t 20`).
+> **⚠️ Important**: The `-nt 1` flag uses a single thread, which is **required for SQLite**. Without it, you'll see lock contention errors like "Took X seconds since last lock refresh". For production with PostgreSQL or MySQL, you can use more threads (e.g., `-nt 20`).
 
 **Expected output** (per file):
 ```
@@ -463,14 +463,14 @@ ERR: Took X seconds since last lock refresh. RES() OBS([...])
 
 **Cause**: SQLite doesn't handle high concurrency well. The default 20 threads overwhelm the file-based database.
 
-**Solution**: Use the `-t 1` flag to load with a single thread:
+**Solution**: Use the `-nt 1` flag to load with a single thread:
 ```bash
-sz_file_loader -t 1 -f customers.jsonl
-sz_file_loader -t 1 -f reference.jsonl
-sz_file_loader -t 1 -f watchlist.jsonl
+sz_file_loader -nt 1 -f customers.jsonl
+sz_file_loader -nt 1 -f reference.jsonl
+sz_file_loader -nt 1 -f watchlist.jsonl
 ```
 
-This will be slower but avoids lock contention. For production with PostgreSQL or MySQL, you can use `-t 20` or higher.
+This will be slower but avoids lock contention. For production with PostgreSQL or MySQL, you can use `-nt 20` or higher.
 
 ### "Unknown command" or "Data source does not exist" in sz_explorer
 
