@@ -12,6 +12,12 @@ This Docker image extends the Cloudera ML Runtime with JupyterLab and Python 3.1
 docker build -t senzing-ml-runtime:1.2 .
 ```
 
+## Use the built Docker Image
+
+```
+docker.io/kevintalbert/caisenzingcustomruntime:latest
+```
+
 ## What's Included
 
 - **Senzing SDK POC v4.0.0**: Full installation of the Senzing entity resolution SDK
@@ -276,8 +282,3 @@ The following Senzing-related environment variables are automatically configured
 └── var/              # Database and runtime data (writable)
 ```
 
-## Notes
-
-- The runtime includes 500 free source records for evaluation
-- SQLite is used for evaluation; production systems should use PostgreSQL or other enterprise RDBMS
-- Senzing Support is 100% FREE - contact them for assistance or additional evaluation records
