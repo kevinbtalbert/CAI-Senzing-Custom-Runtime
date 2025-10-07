@@ -34,81 +34,20 @@ docker.io/kevintalbert/caisenzingcustomruntime:latest
 - **Python Support**: Includes `gnureadline` and `prettytable` for interactive tools like `sz_explorer`
 - **MCP Integration**: Model Context Protocol support for AI agent integration
 
-## Using Senzing in the Runtime
+## Using Senzing - Command-Line Tools
 
-The Senzing environment is automatically configured. You can use Senzing tools and APIs immediately:
-
-### Command-line Tools
+The Senzing environment provides powerful command-line tools for entity resolution. After setting up your project (see below), you can use:
 
 ```bash
 # Load data files
 sz_file_loader -f your_data.jsonl
 
-# Explore entities
+# Explore entities interactively
 sz_explorer
 
 # Configure data sources
 sz_configtool
 ```
-
-### Python SDK
-
-A comprehensive example file [`senzing_example.py`](senzing_example.py) demonstrates all major SDK features:
-
-**Run the example:**
-```bash
-# After creating persistent project (see below)
-cd ~/senzing
-source setupEnv
-python ~/senzing_example.py
-```
-
-**What the example covers:**
-- ✅ Initializing the Senzing v4 SDK using `SzAbstractFactoryCore`
-- ✅ Adding new records to the entity repository
-- ✅ Retrieving entities by record ID with full details
-- ✅ Searching for entities by attributes (name, DOB, etc.)
-- ✅ Finding relationship paths between entities
-- ✅ "Why" analysis - explaining entity resolution decisions
-- ✅ Getting engine statistics
-
-**Quick Python snippet:**
-```python
-from senzing import SzError
-from senzing_core import SzAbstractFactoryCore
-import json
-import os
-
-# Use persistent project in home directory
-project_dir = os.path.expanduser('~/senzing')
-
-# Configuration for your Senzing project
-senzing_config = json.dumps({
-    "PIPELINE": {
-        "CONFIGPATH": f"{project_dir}/etc",
-        "SUPPORTPATH": f"{project_dir}/data",
-        "RESOURCEPATH": f"{project_dir}/resources"
-    },
-    "SQL": {
-        "CONNECTION": f"sqlite3://na:na@{project_dir}/var/sqlite/G2C.db"
-    }
-})
-
-# Initialize Senzing (after sourcing setupEnv)
-# IMPORTANT: Keep sz_factory alive as long as you use sz_engine!
-sz_factory = SzAbstractFactoryCore("MyApp", senzing_config)
-sz_engine = sz_factory.create_engine()
-
-# Get an entity by record ID
-result = sz_engine.get_entity_by_record_id("CUSTOMERS", "1070")
-
-# Parse and display the JSON result
-entity = json.loads(result)
-print(f"Entity ID: {entity['RESOLVED_ENTITY']['ENTITY_ID']}")
-print(f"Entity Name: {entity['RESOLVED_ENTITY']['ENTITY_NAME']}")
-```
-
-> **⚠️ Important**: The `sz_factory` object must remain in scope for as long as you use the `sz_engine`. If the factory is destroyed, the engine becomes unusable.
 
 ## Getting Started with Sample Data
 
@@ -413,12 +352,110 @@ The example will show full results now that you have data loaded!
 
 ---
 
+## Using Senzing - Python SDK
+
+Now that you have data loaded and understand how Senzing works with command-line tools, you can use the Python SDK to integrate entity resolution into your applications.
+
+### Python SDK Overview
+
+A comprehensive example file [`senzing_example.py`](senzing_example.py) demonstrates all major SDK features:
+
+**Run the example:**
+```bash
+# Make sure you've completed the walkthrough above and have data loaded
+cd ~/senzing
+source setupEnv
+python ~/senzing_example.py
+```
+
+**What the example covers:**
+- ✅ Initializing the Senzing v4 SDK using `SzAbstractFactoryCore`
+- ✅ Adding new records to the entity repository
+- ✅ Retrieving entities by record ID with full details
+- ✅ Searching for entities by attributes (name, DOB, etc.)
+- ✅ Finding relationship paths between entities
+- ✅ "Why" analysis - explaining entity resolution decisions
+- ✅ Getting engine statistics
+
+### Quick Python Example
+
+Here's a minimal example to get started:
+
+```python
+from senzing import SzError
+from senzing_core import SzAbstractFactoryCore
+import json
+import os
+
+# Use persistent project in home directory
+project_dir = os.path.expanduser('~/senzing')
+
+# Configuration for your Senzing project
+senzing_config = json.dumps({
+    "PIPELINE": {
+        "CONFIGPATH": f"{project_dir}/etc",
+        "SUPPORTPATH": f"{project_dir}/data",
+        "RESOURCEPATH": f"{project_dir}/resources"
+    },
+    "SQL": {
+        "CONNECTION": f"sqlite3://na:na@{project_dir}/var/sqlite/G2C.db"
+    }
+})
+
+# Initialize Senzing (after sourcing setupEnv)
+# IMPORTANT: Keep sz_factory alive as long as you use sz_engine!
+sz_factory = SzAbstractFactoryCore("MyApp", senzing_config)
+sz_engine = sz_factory.create_engine()
+
+# Get an entity by record ID
+result = sz_engine.get_entity_by_record_id("CUSTOMERS", "1070")
+
+# Parse and display the JSON result
+entity = json.loads(result)
+print(f"Entity ID: {entity['RESOLVED_ENTITY']['ENTITY_ID']}")
+print(f"Entity Name: {entity['RESOLVED_ENTITY']['ENTITY_NAME']}")
+```
+
+> **⚠️ Important**: The `sz_factory` object must remain in scope for as long as you use the `sz_engine`. If the factory is destroyed, the engine becomes unusable.
+
+### Common Python SDK Operations
+
+**Adding a record:**
+```python
+record = json.dumps({
+    "DATA_SOURCE": "CUSTOMERS",
+    "RECORD_ID": "NEW_001",
+    "NAME_FULL": "Jane Smith",
+    "DATE_OF_BIRTH": "1985-03-15",
+    "ADDR_FULL": "123 Main St, Las Vegas NV"
+})
+sz_engine.add_record("CUSTOMERS", "NEW_001", record)
+```
+
+**Searching for entities:**
+```python
+search_json = json.dumps({
+    "NAME_FULL": "Robert Smith",
+    "DATE_OF_BIRTH": "1978-12-11"
+})
+results = sz_engine.search_by_attributes(search_json)
+entities = json.loads(results)
+```
+
+**Explaining resolution:**
+```python
+why_result = sz_engine.why_records("CUSTOMERS", "1001", "CUSTOMERS", "1002")
+explanation = json.loads(why_result)
+```
+
+---
+
 ## Next Steps
 
 You now have a fully functional, persistent Senzing environment! Here's what to try next:
 
 1. **Load your own data** - Follow the [Entity Specification](https://senzing.com/docs/entity-spec/) to map your data
-2. **Build applications** - Use the Python SDK to build entity resolution into your applications
+2. **Build applications** - Use the Python SDK examples above to build entity resolution into your applications
 3. **Explore the API** - Check out the [Python SDK Reference](https://senzing.com/docs/python/index.html)
 4. **Production database** - For production, migrate from SQLite to PostgreSQL or MySQL
 
