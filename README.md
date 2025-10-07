@@ -367,7 +367,9 @@ A comprehensive example file [`senzing_example.py`](senzing_example.py) demonstr
 # Make sure you've completed the walkthrough above and have data loaded
 cd ~/senzing
 source setupEnv
-python ~/senzing_example.py
+
+# Important: Explicitly set project directory (setupEnv may override it)
+SENZING_PROJECT_DIR=~/senzing python ~/senzing_example.py
 ```
 
 **What the example covers:**
@@ -525,6 +527,25 @@ def get_engine():
 ```bash
 /opt/senzing/er/bin/sz_create_project ~/senzing  # Persistent
 # NOT: /var/senzing/project  # Ephemeral!
+```
+
+### Python Script Uses Wrong Project Directory
+
+**Problem**: Python script shows "Project directory: /var/senzing/project" and can't find your data.
+
+**Cause**: The `setupEnv` script sets `SENZING_PROJECT_DIR` environment variable, which overrides the script's default.
+
+**Solution**: Explicitly set the project directory when running the script:
+```bash
+cd ~/senzing
+source setupEnv
+SENZING_PROJECT_DIR=~/senzing python ~/senzing_example.py
+```
+
+Or set it permanently in your session:
+```bash
+export SENZING_PROJECT_DIR=~/senzing
+python ~/senzing_example.py
 ```
 
 ---

@@ -23,9 +23,10 @@ See README.md "Getting Started with Sample Data" section for detailed instructio
 Usage:
     cd ~/senzing
     source setupEnv
-    python ~/senzing_example.py
+    SENZING_PROJECT_DIR=~/senzing python ~/senzing_example.py
     
-Note: Set SENZING_PROJECT_DIR env var to use a different project location
+Note: The setupEnv script may override SENZING_PROJECT_DIR. Explicitly set it
+      to ~/senzing (as shown above) to ensure the script uses your persistent project.
 """
 
 import json
